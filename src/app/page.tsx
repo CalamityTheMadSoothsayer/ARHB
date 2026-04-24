@@ -1,18 +1,24 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { MapPin, Phone, Facebook } from 'lucide-react'
 
 export default function HomePage() {
   return (
     <div>
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-16 pb-12 text-center">
-        <p className="text-brand-600 text-sm font-medium tracking-widest uppercase mb-3">Homemade · Brush, CO</p>
-        <h1 className="text-5xl md:text-6xl text-brand-900 mb-4">
-          Aaron Rockwell's<br />Homemade Breads
-        </h1>
-        <p className="text-lg text-stone-500 max-w-lg mx-auto mb-8">
-          Small-batch sourdough and brioche buns, made with the same care and love every time.
-        </p>
+      {/* Hero — full width header image */}
+      <section className="w-full">
+        <Image
+          src="/images/header.png"
+          alt="Welcome to Aaron Rockwell Breads — Homemade breads made with care, baked with love"
+          width={1500}
+          height={600}
+          className="w-full h-auto"
+          priority
+        />
+      </section>
+
+      {/* CTA */}
+      <section className="text-center py-10">
         <Link href="/menu" className="btn-primary text-lg">
           Order fresh bread →
         </Link>
@@ -27,20 +33,34 @@ export default function HomePage() {
       <section className="max-w-5xl mx-auto px-4 py-16">
         <h2 className="text-3xl text-center mb-10 text-brand-900">What we bake</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { name: 'Sourdough Loaf', price: '$8.00', desc: 'Classic homemade sourdough. Crusty outside, chewy inside.' },
-            { name: 'Brioche Buns — 4 pack', price: '$6.00', desc: 'Soft, buttery brioche buns. Perfect for burgers or just eating.' },
-            { name: 'Brioche Buns — 8 pack', price: '$10.00', desc: 'Same great brioche buns, bigger pack for bigger gatherings.' },
-          ].map((product) => (
-            <div key={product.name} className="card p-6">
-              <div className="w-full h-40 bg-brand-100 rounded-lg mb-4 flex items-center justify-center text-4xl">
-                🍞
-              </div>
-              <h3 className="text-lg font-serif text-brand-900 mb-1">{product.name}</h3>
-              <p className="text-brand-600 font-medium mb-2">{product.price}</p>
-              <p className="text-sm text-stone-500">{product.desc}</p>
+
+          <div className="card p-6">
+            <div className="w-full h-48 relative rounded-lg overflow-hidden mb-4">
+              <Image src="/images/sourdough_thumbnail.png" alt="Sourdough loaf" fill className="object-cover" />
             </div>
-          ))}
+            <h3 className="text-lg font-serif text-brand-900 mb-1">Sourdough Loaf</h3>
+            <p className="text-brand-600 font-medium mb-2">$8.00</p>
+            <p className="text-sm text-stone-500">Classic homemade sourdough. Crusty outside, chewy inside.</p>
+          </div>
+
+          <div className="card p-6">
+            <div className="w-full h-48 relative rounded-lg overflow-hidden mb-4">
+              <Image src="/images/brioche_thumbnail.jpg" alt="Brioche buns" fill className="object-cover" />
+            </div>
+            <h3 className="text-lg font-serif text-brand-900 mb-1">Brioche Buns — 4 Pack</h3>
+            <p className="text-brand-600 font-medium mb-2">$6.00</p>
+            <p className="text-sm text-stone-500">Soft, buttery brioche buns. Perfect for burgers or just eating.</p>
+          </div>
+
+          <div className="card p-6">
+            <div className="w-full h-48 relative rounded-lg overflow-hidden mb-4">
+              <Image src="/images/brioche_thumbnail.jpg" alt="Brioche buns 8 pack" fill className="object-cover" />
+            </div>
+            <h3 className="text-lg font-serif text-brand-900 mb-1">Brioche Buns — 8 Pack</h3>
+            <p className="text-brand-600 font-medium mb-2">$10.00</p>
+            <p className="text-sm text-stone-500">Same great brioche buns, bigger pack for bigger gatherings.</p>
+          </div>
+
         </div>
         <p className="text-center text-stone-400 text-sm mt-6 italic">More coming soon…</p>
       </section>
@@ -70,19 +90,13 @@ export default function HomePage() {
           <div className="card p-6">
             <Phone className="mx-auto mb-3 text-brand-600" size={24} />
             <h3 className="font-medium mb-2">Phone</h3>
-            <a href="tel:9703709895" className="text-brand-700 hover:text-brand-900">
-              970-370-9895
-            </a>
+            <a href="tel:9703709895" className="text-brand-700 hover:text-brand-900">970-370-9895</a>
           </div>
           <div className="card p-6">
             <Facebook className="mx-auto mb-3 text-brand-600" size={24} />
             <h3 className="font-medium mb-2">Facebook</h3>
-            <a
-              href="https://www.facebook.com/profile.php?id=61560442705913"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-700 hover:text-brand-900 text-sm"
-            >
+            <a href="https://www.facebook.com/profile.php?id=61560442705913" target="_blank" rel="noopener noreferrer"
+              className="text-brand-700 hover:text-brand-900 text-sm">
               Follow us →
             </a>
           </div>
