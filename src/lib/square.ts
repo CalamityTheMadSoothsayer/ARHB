@@ -3,7 +3,7 @@ import type { Order, CartReservation } from '@/types'
 
 export const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN!,
-  environment: Environment.Production,
+  environment: Environment.Sandbox,
 })
 
 const locationId = process.env.SQUARE_LOCATION_ID!
