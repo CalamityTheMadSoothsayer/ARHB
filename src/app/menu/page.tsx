@@ -4,7 +4,6 @@ import { useSession, signIn } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 import { ShoppingCart, Clock, Bell } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 export default function MenuPage() {
   const { data: session } = useSession()
@@ -75,7 +74,7 @@ export default function MenuPage() {
 
           return (
             <div key={item.id} className={`card p-6 flex flex-col ${isOut ? 'opacity-60' : ''}`}>
-              <div className="w-full h-36 relative rounded-lg overflow-hidden mb-4"><Image src={item.name.toLowerCase().includes('sourdough') ? '/images/sourdough_thumbnail.png' : '/images/brioche_thumbnail.jpg'} alt={item.name} fill className="object-cover" /></div>
+              <div className="w-full h-36 bg-brand-100 rounded-lg mb-4 flex items-center justify-center text-5xl">🍞</div>
               <h2 className="font-serif text-lg text-brand-900 mb-1">{item.name}</h2>
               <p className="text-brand-600 font-medium mb-1">${(item.price / 100).toFixed(2)}</p>
               <p className="text-sm text-stone-500 mb-3 flex-1">{item.description}</p>
