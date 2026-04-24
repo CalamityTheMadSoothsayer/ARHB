@@ -12,7 +12,7 @@ export default function HomePage() {
           alt="Welcome to Aaron Rockwell Breads — Homemade breads made with care, baked with love"
           width={1500}
           height={600}
-          className="w-full h-auto"
+          className="w-full h-auto max-w-3xl mx-auto block"
           priority
         />
       </section>
@@ -63,6 +63,33 @@ export default function HomePage() {
 
         </div>
         <p className="text-center text-stone-400 text-sm mt-6 italic">More coming soon…</p>
+      </section>
+
+      {/* How it works */}
+      <section className="max-w-5xl mx-auto px-4 py-16">
+        <h2 className="text-3xl text-center mb-10 text-brand-900">How it works</h2>
+        <div className="grid md:grid-cols-4 gap-6 text-center">
+          <div className="card p-6">
+            <div className="w-10 h-10 rounded-full bg-brand-800 text-white flex items-center justify-center font-serif text-lg mx-auto mb-3">1</div>
+            <h3 className="font-medium mb-2">Order online</h3>
+            <p className="text-sm text-stone-500">Browse available stock and pay securely through Square.</p>
+          </div>
+          <div className="card p-6">
+            <div className="w-10 h-10 rounded-full bg-brand-800 text-white flex items-center justify-center font-serif text-lg mx-auto mb-3">2</div>
+            <h3 className="font-medium mb-2">We bake fresh</h3>
+            <p className="text-sm text-stone-500">Sourdough is baked ahead. Brioche buns are made to order — fresh every time.</p>
+          </div>
+          <div className="card p-6">
+            <div className="w-10 h-10 rounded-full bg-brand-800 text-white flex items-center justify-center font-serif text-lg mx-auto mb-3">3</div>
+            <h3 className="font-medium mb-2">Track it live</h3>
+            <p className="text-sm text-stone-500">Get email updates as your bread goes through each stage.</p>
+          </div>
+          <div className="card p-6">
+            <div className="w-10 h-10 rounded-full bg-brand-800 text-white flex items-center justify-center font-serif text-lg mx-auto mb-3">4</div>
+            <h3 className="font-medium mb-2">Pick it up</h3>
+            <p className="text-sm text-stone-500">Come grab it at your chosen location in Brush, CO.</p>
+          </div>
+        </div>
       </section>
 
       {/* About */}

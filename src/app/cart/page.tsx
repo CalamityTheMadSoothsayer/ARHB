@@ -5,12 +5,10 @@ import { toast } from 'react-hot-toast'
 import { Trash2, Clock, MapPin } from 'lucide-react'
 import { PICKUP_LOCATIONS } from '@/types'
 import type { PickupLocation } from '@/types'
-import { differenceInSeconds } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { differenceInSeconds, addDays, format } from 'date-fns'
 
 export default function CartPage() {
   const { data: session } = useSession()
-  const router = useRouter()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [checkingOut, setCheckingOut] = useState(false)
@@ -61,7 +59,7 @@ export default function CartPage() {
   const secsLeft = minExpiry ? Math.max(0, differenceInSeconds(minExpiry, now)) : null
   const minsLeft = secsLeft !== null ? Math.floor(secsLeft / 60) : null
   const secsRem = secsLeft !== null ? secsLeft % 60 : null
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
+  const total = items.reduce((sum, i) => sum + i.unit_price * i.qty, 0)
 
   if (!session?.user) return (
     <div className="max-w-lg mx-auto px-4 py-20 text-center">
@@ -92,18 +90,24 @@ export default function CartPage() {
       )}
 
       <div className="space-y-3 mb-6">
-        {items.map(item => (
-          <div key={item.id} className="card p-4 flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-stone-500">{item.qty} × ${(item.price / 100).toFixed(2)}</p>
+        {items.map(item => {
+          const bakeDate = item.bake_date ? new Date(item.bake_date + 'T12:00:00') : null
+          const expiryDate = bakeDate ? addDays(bakeDate, 3) : null
+          const itemName = item.variant_label ? `${item.name} — ${item.variant_label}` : item.name
+          return (
+            <div key={item.id} className="card p-4 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="font-medium">{itemName}</p>
+                <p className="text-sm text-stone-500">{item.qty} × ${(item.unit_price / 100).toFixed(2)}</p>
+                {expiryDate && <p className="text-xs text-red-400 mt-0.5">Best by: {format(expiryDate, 'MMMM d')}</p>}
+              </div>
+              <div className="flex items-center gap-3">
+                <p className="font-medium">${((item.unit_price * item.qty) / 100).toFixed(2)}</p>
+                <button onClick={() => removeItem(item)} className="text-stone-400 hover:text-red-500"><Trash2 size={16} /></button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <p className="font-medium">${((item.price * item.qty) / 100).toFixed(2)}</p>
-              <button onClick={() => removeItem(item)} className="text-stone-400 hover:text-red-500"><Trash2 size={16} /></button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="card p-4 mb-6">

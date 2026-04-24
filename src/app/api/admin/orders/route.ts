@@ -13,7 +13,7 @@ export async function GET() {
   if (!isAdmin(session?.user?.email)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
   const [orders] = await db.query(
-    `SELECT o.*, b.pickup_window, b.pickup_date FROM orders o
+    `SELECT o.*, b.pickup_window FROM orders o
      JOIN batches b ON b.id = o.batch_id
      WHERE o.status NOT IN ('completed', 'cancelled')
      ORDER BY o.created_at ASC`
