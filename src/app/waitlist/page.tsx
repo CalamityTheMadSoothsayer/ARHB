@@ -326,12 +326,12 @@ export default function WaitlistPage() {
                       <button key={dateStr} disabled={disabled}
                         onClick={() => { setSelectedDate(dateStr); setUseCustomDate(false) }}
                         title={blackoutReason ?? undefined}
-                        className={`p-1 rounded text-center border transition-colors ${blacked ? 'bg-stone-100 border-stone-200 opacity-50 cursor-not-allowed' : past ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-brand-400'} ${isSelected ? 'border-brand-600 bg-brand-100' : isScheduled && !blacked ? 'border-brand-300 bg-brand-50' : !blacked ? 'border-brand-100' : ''}`}>
-                        <p className="text-xs font-medium mb-0.5">{format(day, 'd')}</p>
+                        className={`p-1 rounded text-center border transition-colors ${blacked ? 'bg-red-100 border-red-300 cursor-not-allowed' : past ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-brand-400'} ${isSelected ? 'border-brand-600 bg-brand-100' : isScheduled && !blacked ? 'border-brand-300 bg-brand-50' : !blacked ? 'border-brand-100' : ''}`}>
+                        <p className={`text-xs font-medium mb-0.5 ${blacked ? 'text-red-400' : ''}`}>{format(day, 'd')}</p>
                         {!blacked && sourdough && !sourdough.is_unavailable && <div className="text-xs bg-amber-100 text-amber-800 rounded">S</div>}
                         {!blacked && brioche && !brioche.is_unavailable && <div className="text-xs bg-blue-100 text-blue-800 rounded">B</div>}
                         {!blacked && rolls && !rolls.is_unavailable && <div className="text-xs bg-pink-100 text-pink-800 rounded">R</div>}
-                        {blacked && <div className="text-xs text-stone-400">—</div>}
+                        {blacked && <div className="text-xs text-red-300">—</div>}
                       </button>
                     )
                   })}
@@ -344,7 +344,7 @@ export default function WaitlistPage() {
             <span><span className="inline-block w-3 h-3 bg-amber-100 rounded mr-1" />S = Sourdough</span>
             <span><span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1" />B = Brioche</span>
             <span><span className="inline-block w-3 h-3 bg-pink-100 rounded mr-1" />R = Cinnamon Rolls</span>
-            <span><span className="inline-block w-3 h-3 bg-stone-100 border border-stone-200 rounded mr-1" />Not available</span>
+            <span><span className="inline-block w-3 h-3 bg-red-100 border border-red-300 rounded mr-1" />Not available</span>
           </div>
 
           {selectedDate && !isScheduledBakeDay(selectedDate) && (
