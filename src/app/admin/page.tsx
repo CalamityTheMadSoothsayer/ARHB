@@ -824,6 +824,8 @@ function WaitlistManager() {
 function BakeCalendarManager({ products }: { products: any[] }) {
   const [calendar, setCalendar] = useState<any[]>([])
   const [form, setForm] = useState({ bake_date: '', product_id: '', max_orders: 10, cutoff_hours: 48 })
+  const [blackouts, setBlackouts] = useState<any[]>([])
+  const [blackoutForm, setBlackoutForm] = useState({ start_date: '', end_date: '', reason: '' })
 
   const fetchCalendar = async () => {
     const res = await fetch('/api/admin/bake-calendar')
@@ -831,7 +833,13 @@ function BakeCalendarManager({ products }: { products: any[] }) {
     setCalendar(data.calendar || [])
   }
 
-  useEffect(() => { fetchCalendar() }, [])
+  const fetchBlackouts = async () => {
+    const res = await fetch('/api/admin/blackout-dates')
+    const data = await res.json()
+    setBlackouts(data.blackouts || [])
+  }
+
+  useEffect(() => { fetchCalendar(); fetchBlackouts() }, [])
 
   const add = async () => {
     if (!form.bake_date || !form.product_id) { toast.error('Fill in date and product'); return }
@@ -853,43 +861,107 @@ function BakeCalendarManager({ products }: { products: any[] }) {
     fetchCalendar()
   }
 
+  const addBlackout = async () => {
+    if (!blackoutForm.start_date || !blackoutForm.end_date) { toast.error('Select start and end date'); return }
+    if (blackoutForm.end_date < blackoutForm.start_date) { toast.error('End date must be after start date'); return }
+    const res = await fetch('/api/admin/blackout-dates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(blackoutForm),
+    })
+    if (res.ok) { toast.success('Blackout added'); setBlackoutForm({ start_date: '', end_date: '', reason: '' }); fetchBlackouts() }
+    else toast.error('Failed to add blackout')
+  }
+
+  const removeBlackout = async (id: string) => {
+    await fetch('/api/admin/blackout-dates', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    fetchBlackouts()
+  }
+
   return (
-    <div className="card p-5 bg-brand-50">
-      <h3 className="font-serif text-lg mb-4">Bake calendar</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-        <div>
-          <label className="text-xs text-stone-500 block mb-1">Date</label>
-          <input type="date" value={form.bake_date} onChange={e => setForm(f => ({ ...f, bake_date: e.target.value }))}
-            className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+    <div className="space-y-6">
+      <div className="card p-5 bg-brand-50">
+        <h3 className="font-serif text-lg mb-4">Bake calendar</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Date</label>
+            <input type="date" value={form.bake_date} onChange={e => setForm(f => ({ ...f, bake_date: e.target.value }))}
+              className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Product</label>
+            <select value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}
+              className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none">
+              <option value="">Select…</option>
+              {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Max orders</label>
+            <input type="number" value={form.max_orders} onChange={e => setForm(f => ({ ...f, max_orders: parseInt(e.target.value) || 10 }))}
+              className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Cutoff (hours before)</label>
+            <input type="number" value={form.cutoff_hours} onChange={e => setForm(f => ({ ...f, cutoff_hours: parseInt(e.target.value) || 48 }))}
+              className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+          </div>
         </div>
-        <div>
-          <label className="text-xs text-stone-500 block mb-1">Product</label>
-          <select value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}
-            className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none">
-            <option value="">Select…</option>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-stone-500 block mb-1">Max orders</label>
-          <input type="number" value={form.max_orders} onChange={e => setForm(f => ({ ...f, max_orders: parseInt(e.target.value) || 10 }))}
-            className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
-        </div>
-        <div>
-          <label className="text-xs text-stone-500 block mb-1">Cutoff (hours before)</label>
-          <input type="number" value={form.cutoff_hours} onChange={e => setForm(f => ({ ...f, cutoff_hours: parseInt(e.target.value) || 48 }))}
-            className="w-full border border-brand-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+        <button onClick={add} className="btn-primary !py-1.5 !px-4 text-sm mb-4">Add bake date</button>
+        <div className="space-y-2">
+          {calendar.map((c: any) => (
+            <div key={`${c.bake_date}-${c.product_id}`} className="flex items-center justify-between text-sm border border-brand-100 rounded p-2 bg-white">
+              <span>{c.bake_date} — {c.product_name} (max {c.max_orders}, cutoff {c.cutoff_hours}h)</span>
+              <button onClick={() => remove(c.bake_date, c.product_id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+            </div>
+          ))}
+          {calendar.length === 0 && <p className="text-stone-400 text-sm">No bake dates set.</p>}
         </div>
       </div>
-      <button onClick={add} className="btn-primary !py-1.5 !px-4 text-sm mb-4">Add bake date</button>
-      <div className="space-y-2">
-        {calendar.map((c: any) => (
-          <div key={`${c.bake_date}-${c.product_id}`} className="flex items-center justify-between text-sm border border-brand-100 rounded p-2 bg-white">
-            <span>{c.bake_date} — {c.product_name} (max {c.max_orders}, cutoff {c.cutoff_hours}h)</span>
-            <button onClick={() => remove(c.bake_date, c.product_id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+
+      <div className="card p-5 bg-red-50 border border-red-100">
+        <h3 className="font-serif text-lg mb-1">Days off</h3>
+        <p className="text-xs text-stone-500 mb-4">Block date ranges when you won't be baking. Customers won't be able to select these days.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">From</label>
+            <input type="date" value={blackoutForm.start_date}
+              onChange={e => setBlackoutForm(f => ({ ...f, start_date: e.target.value }))}
+              className="w-full border border-red-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
           </div>
-        ))}
-        {calendar.length === 0 && <p className="text-stone-400 text-sm">No bake dates set.</p>}
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">To</label>
+            <input type="date" value={blackoutForm.end_date}
+              min={blackoutForm.start_date}
+              onChange={e => setBlackoutForm(f => ({ ...f, end_date: e.target.value }))}
+              className="w-full border border-red-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Reason (optional)</label>
+            <input type="text" placeholder="e.g. Work week, vacation…" value={blackoutForm.reason}
+              onChange={e => setBlackoutForm(f => ({ ...f, reason: e.target.value }))}
+              className="w-full border border-red-200 rounded px-2 py-1.5 text-sm focus:outline-none" />
+          </div>
+        </div>
+        <button onClick={addBlackout} className="bg-red-700 text-white rounded px-4 py-1.5 text-sm hover:bg-red-800 transition-colors mb-4">
+          Block dates
+        </button>
+        <div className="space-y-2">
+          {blackouts.map((b: any) => (
+            <div key={b.id} className="flex items-center justify-between text-sm border border-red-100 rounded p-2 bg-white">
+              <span>
+                {b.start_date === b.end_date ? b.start_date : `${b.start_date} → ${b.end_date}`}
+                {b.reason && <span className="text-stone-400 ml-2">— {b.reason}</span>}
+              </span>
+              <button onClick={() => removeBlackout(b.id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+            </div>
+          ))}
+          {blackouts.length === 0 && <p className="text-stone-400 text-sm">No days off set.</p>}
+        </div>
       </div>
     </div>
   )

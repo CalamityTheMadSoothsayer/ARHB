@@ -17,5 +17,10 @@ export async function GET() {
      ORDER BY bc.bake_date ASC`
   ) as any[]
 
-  return NextResponse.json({ calendar })
+  const [blackouts] = await db.query(
+    `SELECT id, DATE_FORMAT(start_date, '%Y-%m-%d') as start_date, DATE_FORMAT(end_date, '%Y-%m-%d') as end_date, reason
+     FROM blackout_dates WHERE end_date >= CURDATE() ORDER BY start_date ASC`
+  ) as any[]
+
+  return NextResponse.json({ calendar, blackouts })
 }

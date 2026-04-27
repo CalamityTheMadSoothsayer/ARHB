@@ -14,6 +14,7 @@ export default function WaitlistPage() {
   const { data: session } = useSession()
   const [variants, setVariants] = useState<any[]>([])
   const [calendar, setCalendar] = useState<any[]>([])
+  const [blackouts, setBlackouts] = useState<any[]>([])
   const [myEntries, setMyEntries] = useState<any[]>([])
   const [thresholds, setThresholds] = useState<Record<string, number>>({})
   const [thresholdMsg, setThresholdMsg] = useState('')
@@ -52,6 +53,7 @@ export default function WaitlistPage() {
     const varData = await varRes.json()
 
     setCalendar(calData.calendar || [])
+    setBlackouts(calData.blackouts || [])
     setVariants(varData.variants || [])
     setThresholdMsg(settingsData.threshold_message || '')
     const t: Record<string, number> = {}
@@ -86,6 +88,9 @@ export default function WaitlistPage() {
   const isScheduledBakeDay = (dateStr: string) =>
     calendar.some(c => c.bake_date === dateStr && !c.is_unavailable)
 
+  const isBlackout = (dateStr: string) =>
+    blackouts.some(b => dateStr >= b.start_date && dateStr <= b.end_date)
+
   const isTooSoon = (dateStr: string) => {
     const date = new Date(dateStr + 'T12:00:00')
     return differenceInHours(date, new Date()) < 48
@@ -116,6 +121,7 @@ export default function WaitlistPage() {
     if (!session?.user) { signIn('google'); return }
     if (!finalDate) { toast.error('Please select a preferred bake date'); return }
     if (isTooSoon(finalDate)) { toast.error('Date must be at least 48 hours away'); return }
+    if (isBlackout(finalDate)) { toast.error('That date is not available'); return }
 
     setSubmitting(true)
     let success = true
@@ -303,7 +309,9 @@ export default function WaitlistPage() {
                   {Array.from({ length: firstDow }).map((_, i) => <div key={i} />)}
                   {mDays.map(day => {
                     const dateStr = format(day, 'yyyy-MM-dd')
+                    const blacked = isBlackout(dateStr)
                     const past = (isPast(day) && !isToday(day)) || isTooSoon(dateStr)
+                    const disabled = past || blacked
                     const isScheduled = isScheduledBakeDay(dateStr)
                     const isSelected = selectedDate === dateStr && !useCustomDate
                     const sourdough = getCalendarDay(day, 'prod-sourdough')
@@ -311,13 +319,14 @@ export default function WaitlistPage() {
                     const rolls = getCalendarDay(day, 'prod-cinnamon-rolls')
 
                     return (
-                      <button key={dateStr} disabled={past}
+                      <button key={dateStr} disabled={disabled}
                         onClick={() => { setSelectedDate(dateStr); setUseCustomDate(false) }}
-                        className={`p-1 rounded text-center border transition-colors ${past ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-brand-400'} ${isSelected ? 'border-brand-600 bg-brand-100' : isScheduled ? 'border-brand-300 bg-brand-50' : 'border-brand-100'}`}>
+                        className={`p-1 rounded text-center border transition-colors ${blacked ? 'bg-stone-100 border-stone-200 opacity-50 cursor-not-allowed' : past ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-brand-400'} ${isSelected ? 'border-brand-600 bg-brand-100' : isScheduled && !blacked ? 'border-brand-300 bg-brand-50' : !blacked ? 'border-brand-100' : ''}`}>
                         <p className="text-xs font-medium mb-0.5">{format(day, 'd')}</p>
-                        {sourdough && !sourdough.is_unavailable && <div className="text-xs bg-amber-100 text-amber-800 rounded">S</div>}
-                        {brioche && !brioche.is_unavailable && <div className="text-xs bg-blue-100 text-blue-800 rounded">B</div>}
-                        {rolls && !rolls.is_unavailable && <div className="text-xs bg-pink-100 text-pink-800 rounded">R</div>}
+                        {!blacked && sourdough && !sourdough.is_unavailable && <div className="text-xs bg-amber-100 text-amber-800 rounded">S</div>}
+                        {!blacked && brioche && !brioche.is_unavailable && <div className="text-xs bg-blue-100 text-blue-800 rounded">B</div>}
+                        {!blacked && rolls && !rolls.is_unavailable && <div className="text-xs bg-pink-100 text-pink-800 rounded">R</div>}
+                        {blacked && <div className="text-xs text-stone-400">—</div>}
                       </button>
                     )
                   })}
@@ -326,10 +335,11 @@ export default function WaitlistPage() {
             )
           })}
 
-          <div className="flex gap-4 text-xs text-stone-500 mb-6">
+          <div className="flex flex-wrap gap-4 text-xs text-stone-500 mb-6">
             <span><span className="inline-block w-3 h-3 bg-amber-100 rounded mr-1" />S = Sourdough</span>
             <span><span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1" />B = Brioche</span>
             <span><span className="inline-block w-3 h-3 bg-pink-100 rounded mr-1" />R = Cinnamon Rolls</span>
+            <span><span className="inline-block w-3 h-3 bg-stone-100 border border-stone-200 rounded mr-1" />Not available</span>
           </div>
 
           {selectedDate && !isScheduledBakeDay(selectedDate) && (
