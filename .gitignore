@@ -15,3 +15,6 @@ out/
 .DS_Store
 *.log
 npm-debug.log*
+
+# Operational notes
+OPERATIONS.md

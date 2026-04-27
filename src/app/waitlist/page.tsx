@@ -91,6 +91,9 @@ export default function WaitlistPage() {
   const isBlackout = (dateStr: string) =>
     blackouts.some(b => dateStr >= b.start_date && dateStr <= b.end_date)
 
+  const getBlackoutReason = (dateStr: string) =>
+    blackouts.find(b => dateStr >= b.start_date && dateStr <= b.end_date)?.reason ?? null
+
   const isTooSoon = (dateStr: string) => {
     const date = new Date(dateStr + 'T12:00:00')
     return differenceInHours(date, new Date()) < 48
@@ -318,9 +321,11 @@ export default function WaitlistPage() {
                     const brioche = getCalendarDay(day, 'prod-brioche')
                     const rolls = getCalendarDay(day, 'prod-cinnamon-rolls')
 
+                    const blackoutReason = blacked ? getBlackoutReason(dateStr) : null
                     return (
                       <button key={dateStr} disabled={disabled}
                         onClick={() => { setSelectedDate(dateStr); setUseCustomDate(false) }}
+                        title={blackoutReason ?? undefined}
                         className={`p-1 rounded text-center border transition-colors ${blacked ? 'bg-stone-100 border-stone-200 opacity-50 cursor-not-allowed' : past ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-brand-400'} ${isSelected ? 'border-brand-600 bg-brand-100' : isScheduled && !blacked ? 'border-brand-300 bg-brand-50' : !blacked ? 'border-brand-100' : ''}`}>
                         <p className="text-xs font-medium mb-0.5">{format(day, 'd')}</p>
                         {!blacked && sourdough && !sourdough.is_unavailable && <div className="text-xs bg-amber-100 text-amber-800 rounded">S</div>}
