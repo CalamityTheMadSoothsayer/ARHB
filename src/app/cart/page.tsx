@@ -12,7 +12,7 @@ export default function CartPage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [checkingOut, setCheckingOut] = useState(false)
-  const [pickup, setPickup] = useState<PickupLocation>('edison_919')
+  const [pickup, setPickup] = useState<PickupLocation>('edison_901')
   const [now, setNow] = useState(Date.now())
 
   const fetchCart = useCallback(async () => {

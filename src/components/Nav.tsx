@@ -24,6 +24,7 @@ export function Nav() {
           Aaron Rockwell's Breads
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/waitlist" className="text-sm text-stone-600 hover:text-brand-800">Pre-order</Link>
           <Link href="/menu" className="text-sm text-stone-600 hover:text-brand-800">Menu & Order</Link>
           {session?.user && (
             <Link href="/my-orders" className="text-sm text-stone-600 hover:text-brand-800">My Orders</Link>

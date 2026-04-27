@@ -9,7 +9,7 @@ export async function GET() {
   if (!session?.user?.email) return NextResponse.json({ orders: [] })
 
   const [orders] = await db.query(
-    `SELECT o.*, b.pickup_window, b.pickup_date FROM orders o
+    `SELECT o.*, b.pickup_window FROM orders o
      JOIN batches b ON b.id = o.batch_id
      WHERE o.user_email = ?
      ORDER BY o.created_at DESC`,

@@ -11,13 +11,17 @@ export async function GET() {
   if (!batch) return NextResponse.json({ batch: null, inventory: [] })
 
   const [inventory] = await db.query(
-    `SELECT bi.*,
+    `SELECT bi.id, bi.batch_id, p.id as product_id,
             DATE_FORMAT(bi.bake_date, '%Y-%m-%d') as bake_date,
+            COALESCE(bi.total_qty, 0) as total_qty,
+            COALESCE(bi.sold_qty, 0) as sold_qty,
+            COALESCE(bi.reserved_qty, 0) as reserved_qty,
             p.name, p.description, p.price, p.image_url,
-            GREATEST(0, bi.total_qty - bi.sold_qty - bi.reserved_qty) as available_qty
-     FROM batch_inventory bi
-     JOIN products p ON p.id = bi.product_id
-     WHERE bi.batch_id = ?`,
+            GREATEST(0, COALESCE(bi.total_qty, 0) - COALESCE(bi.sold_qty, 0) - COALESCE(bi.reserved_qty, 0)) as available_qty
+     FROM products p
+     LEFT JOIN batch_inventory bi ON bi.product_id = p.id AND bi.batch_id = ?
+     WHERE p.active = 1
+     ORDER BY available_qty DESC`,
     [batch.id]
   ) as any[]
 

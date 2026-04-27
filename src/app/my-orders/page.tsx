@@ -1,15 +1,36 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useSession, signIn } from 'next-auth/react'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_STEPS, PICKUP_LOCATIONS } from '@/types'
+import { ORDER_STATUS_LABELS, PICKUP_LOCATIONS } from '@/types'
 import type { OrderStatus } from '@/types'
-import { CheckCircle, Circle } from 'lucide-react'
+
 import { format } from 'date-fns'
 
 export default function MyOrdersPage() {
   const { data: session } = useSession()
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showSurvey, setShowSurvey] = useState(false)
+  const [surveyDone, setSurveyDone] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('paid') === 'true' && session?.user) {
+      fetch('/api/referral').then(r => r.json()).then(d => {
+        if (!d.answered) setShowSurvey(true)
+      })
+    }
+  }, [session])
+
+  const submitSurvey = async (source: string) => {
+    await fetch('/api/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    })
+    setShowSurvey(false)
+    setSurveyDone(true)
+  }
 
   const fetchOrders = useCallback(async () => {
     if (!session?.user) { setLoading(false); return }
@@ -34,7 +55,7 @@ export default function MyOrdersPage() {
 
   if (loading) return <div className="max-w-2xl mx-auto px-4 py-20 text-center text-stone-400">Loading…</div>
 
-  if (orders.length === 0) return (
+  if (orders.length === 0 && !showSurvey) return (
     <div className="max-w-lg mx-auto px-4 py-20 text-center">
       <p className="text-4xl mb-4">🍞</p>
       <p className="text-stone-500 mb-4">No orders yet.</p>
@@ -45,6 +66,30 @@ export default function MyOrdersPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <h1 className="text-3xl text-brand-900 mb-8">My orders</h1>
+
+      {showSurvey && (
+        <div className="card p-6 mb-8 border-2 border-brand-300">
+          <h2 className="font-serif text-xl text-brand-900 mb-2">One quick question</h2>
+          <p className="text-stone-500 text-sm mb-4">How did you hear about us?</p>
+          <div className="grid grid-cols-2 gap-2">
+            {['Facebook', 'NextDoor', 'Word of mouth', 'Google search', 'Driving by', 'Other'].map(source => (
+              <button key={source} onClick={() => submitSurvey(source)}
+                className="border border-brand-200 rounded-lg px-4 py-2 text-sm text-left hover:bg-brand-50 hover:border-brand-400 transition-colors">
+                {source}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => { setShowSurvey(false); setSurveyDone(true) }} className="text-xs text-stone-400 mt-3 hover:text-stone-600">
+            Skip
+          </button>
+        </div>
+      )}
+
+      {surveyDone && (
+        <div className="card p-4 mb-6 bg-green-50 border-green-200">
+          <p className="text-green-700 text-sm">Thanks for letting us know!</p>
+        </div>
+      )}
       <div className="space-y-6">{orders.map(order => <OrderCard key={order.id} order={order} />)}</div>
     </div>
   )
@@ -53,7 +98,7 @@ export default function MyOrdersPage() {
 function OrderCard({ order }: { order: any }) {
   const location = PICKUP_LOCATIONS[order.pickup_location as keyof typeof PICKUP_LOCATIONS]
   const isCancelled = order.status === 'cancelled'
-  const currentStepIndex = ORDER_STATUS_STEPS.indexOf(order.status)
+
 
   return (
     <div className="card p-6">
@@ -77,25 +122,10 @@ function OrderCard({ order }: { order: any }) {
         {order.pickup_window && <p>🕐 {order.pickup_window}</p>}
       </div>
 
-      {!isCancelled && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">Bread progress</p>
-          <div className="space-y-2">
-            {ORDER_STATUS_STEPS.map((step, i) => {
-              const isDone = currentStepIndex >= i
-              const isCurrent = currentStepIndex === i
-              return (
-                <div key={step} className={`flex items-center gap-3 text-sm ${isDone ? 'text-brand-800' : 'text-stone-300'}`}>
-                  {isDone ? <CheckCircle size={16} className={isCurrent ? 'text-brand-600' : 'text-brand-400'} /> : <Circle size={16} />}
-                  <span className={isCurrent ? 'font-medium' : ''}>{ORDER_STATUS_LABELS[step]}</span>
-                  {isCurrent && <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">Now</span>}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-      {isCancelled && <p className="text-sm text-red-500">This order was cancelled.</p>}
+      {isCancelled
+        ? <p className="text-sm text-red-500">This order was cancelled.</p>
+        : <p className="text-sm text-stone-500">Status: <strong className="text-brand-900">{ORDER_STATUS_LABELS[order.status as OrderStatus]}</strong></p>
+      }
     </div>
   )
 }

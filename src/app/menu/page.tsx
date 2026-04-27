@@ -14,6 +14,33 @@ export default function MenuPage() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState<string | null>(null)
+  const [residency, setResidency] = useState<boolean | null | undefined>(undefined)
+  const [showResidencyModal, setShowResidencyModal] = useState(false)
+  const [showPickupModal, setShowPickupModal] = useState(false)
+
+  useEffect(() => {
+    if (!session?.user) return
+    fetch('/api/profile').then(r => r.json()).then(d => {
+      if (d.profile === null || d.profile?.is_colorado_resident === null) {
+        setResidency(null)
+        setShowResidencyModal(true)
+      } else {
+        setResidency(d.profile.is_colorado_resident === 1)
+      }
+    })
+  }, [session])
+
+  const setResident = async (value: boolean) => {
+    await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_colorado_resident: value }),
+    })
+    setResidency(value)
+    setShowResidencyModal(false)
+    if (value) setShowPickupModal(true)
+    else toast.error('Sorry, orders are only available to Colorado residents.')
+  }
 
   const fetchInventory = useCallback(async () => {
     const res = await fetch('/api/inventory')
@@ -38,6 +65,8 @@ export default function MenuPage() {
 
   const addToCart = async (item: any) => {
     if (!session?.user) { signIn('google'); return }
+    if (residency === null) { setShowResidencyModal(true); return }
+    if (residency === false) { toast.error('Sorry, orders are only available to Colorado residents.'); return }
     const qty = quantities[item.id] || 1
     const variantId = item.variants?.length > 0 ? selectedVariants[item.id] : null
     setAdding(item.id)
@@ -67,6 +96,37 @@ export default function MenuPage() {
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-20 text-center text-stone-400">Loading…</div>
   if (!batch) return <OutOfStockPage />
 
+  if (showPickupModal) return (
+    <div className="max-w-lg mx-auto px-4 py-24 text-center">
+      <h2 className="text-2xl text-brand-900 mb-3">Pickup only — no shipping</h2>
+      <p className="text-stone-500 mb-4">All orders are pickup only in Brush, CO. We do not offer shipping or delivery.</p>
+      <div className="text-sm text-stone-500 mb-8 space-y-1">
+        <p>901 Edison St, Brush, CO 80723</p>
+        <p>919 Edison St, Brush, CO 80723</p>
+      </div>
+      <button onClick={() => setShowPickupModal(false)} className="btn-primary">Got it, let me order!</button>
+    </div>
+  )
+
+  if (showResidencyModal) return (
+    <div className="max-w-lg mx-auto px-4 py-24 text-center">
+      <h2 className="text-2xl text-brand-900 mb-3">Colorado residents only</h2>
+      <p className="text-stone-500 mb-8">Under Colorado cottage food laws, orders are only available to Colorado residents. Are you a Colorado resident?</p>
+      <div className="flex gap-4 justify-center">
+        <button onClick={() => setResident(true)} className="btn-primary">Yes, I'm a Colorado resident</button>
+        <button onClick={() => setResident(false)} className="btn-secondary">No</button>
+      </div>
+    </div>
+  )
+
+  if (residency === false) return (
+    <div className="max-w-lg mx-auto px-4 py-24 text-center">
+      <h2 className="text-2xl text-brand-900 mb-3">Colorado residents only</h2>
+      <p className="text-stone-500 mb-4">Sorry, under Colorado cottage food laws we can only sell to Colorado residents.</p>
+      <button onClick={() => setShowResidencyModal(true)} className="text-sm text-brand-600 underline">I made a mistake — I am a Colorado resident</button>
+    </div>
+  )
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="mb-8">
@@ -75,7 +135,7 @@ export default function MenuPage() {
           <span className="flex items-center gap-1">
             <Clock size={14} /> <strong className="text-stone-700">{batch.pickup_window}</strong>
           </span>
-          <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">Open for orders</span>
+          {inventory.some(i => i.available_qty > 0) ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">Open for orders</span> : <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">Sold out</span>}
         </div>
       </div>
 
@@ -91,7 +151,7 @@ export default function MenuPage() {
             <div key={item.id} className={`card p-6 flex flex-col ${isOut ? 'opacity-60' : ''}`}>
               <div className="w-full h-36 relative rounded-lg overflow-hidden mb-4">
                 <img
-                  src={item.name.toLowerCase().includes('sourdough') ? '/images/sourdough_thumbnail.png' : '/images/brioche_thumbnail.jpg'}
+                  src={item.name.toLowerCase().includes('cinnamon') ? '/images/rolls_thumbnail.jpg' : item.name.toLowerCase().includes('sourdough') ? '/images/sourdough_thumbnail.jpg' : '/images/brioche_thumbnail.jpg'}
                   alt={item.name}
                   className="w-full h-full object-cover"
                 />

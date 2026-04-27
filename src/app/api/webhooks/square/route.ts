@@ -14,10 +14,11 @@ export async function POST(req: NextRequest) {
   }
 
   const event = JSON.parse(body)
-  if (event.type !== 'payment.completed') return NextResponse.json({ received: true })
+  if (event.type !== 'payment.updated') return NextResponse.json({ received: true })
 
   const payment = event.data?.object?.payment
   if (!payment) return NextResponse.json({ received: true })
+  if (payment.status !== 'COMPLETED') return NextResponse.json({ received: true })
 
   const [[order]] = await db.query(
     `SELECT o.*, b.pickup_window FROM orders o JOIN batches b ON b.id = o.batch_id WHERE o.square_order_id = ?`,

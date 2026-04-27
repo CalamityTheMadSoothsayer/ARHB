@@ -86,7 +86,7 @@ export const ORDER_STATUS_STEPS: OrderStatus[] = [
 export type PickupLocation = 'edison_901' | 'edison_919'
 
 export const PICKUP_LOCATIONS: Record<PickupLocation, { label: string; address: string; note?: string }> = {
-  edison_901: { label: '901 Edison St', address: '901 Edison St, Brush, CO 80723' },
+  edison_901: { label: '901 Edison St', address: '901 Edison St, Brush, CO 80723', note: 'Bakery location' },
   edison_919: { label: '919 Edison St', address: '919 Edison St, Brush, CO 80723', note: 'Easier parking' },
 }
 

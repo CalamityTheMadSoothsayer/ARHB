@@ -48,5 +48,10 @@ export async function GET() {
      ORDER BY revenue DESC`
   ) as any[]
 
-  return NextResponse.json({ today, thisWeek, thisMonth, thisYear, monthly, products })
+  const [referrals] = await db.query(
+    `SELECT referral_source, COUNT(*) as count FROM user_profiles
+     WHERE referral_source IS NOT NULL GROUP BY referral_source ORDER BY count DESC`
+  ) as any[]
+
+  return NextResponse.json({ today, thisWeek, thisMonth, thisYear, monthly, products, referrals })
 }
