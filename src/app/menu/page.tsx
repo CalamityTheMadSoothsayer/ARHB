@@ -151,7 +151,7 @@ export default function MenuPage() {
             <div key={item.id} className={`card p-6 flex flex-col ${isOut ? 'opacity-60' : ''}`}>
               <div className="w-full h-36 relative rounded-lg overflow-hidden mb-4">
                 <img
-                  src={item.name.toLowerCase().includes('cinnamon') ? '/images/rolls_thumbnail.jpg' : item.name.toLowerCase().includes('sourdough') ? '/images/sourdough_thumbnail.jpg' : '/images/brioche_thumbnail.jpg'}
+                  src={item.image_url || (item.name.toLowerCase().includes('cinnamon') ? '/images/rolls_thumbnail.jpg' : item.name.toLowerCase().includes('sourdough') ? '/images/sourdough_thumbnail.jpg' : '/images/brioche_thumbnail.jpg')}
                   alt={item.name}
                   className="w-full h-full object-cover"
                 />

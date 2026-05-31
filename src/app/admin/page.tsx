@@ -5,11 +5,11 @@ import { toast } from 'react-hot-toast'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_STEPS } from '@/types'
 import type { OrderStatus } from '@/types'
 import { format, addDays } from 'date-fns'
-import { Plus, Package, Users, BarChart2, Settings2, ClipboardList } from 'lucide-react'
+import { Plus, Package, Users, BarChart2, Settings2, ClipboardList, ShoppingBag, Pencil, Trash2, Upload } from 'lucide-react'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
-  const [tab, setTab] = useState<'orders' | 'batch' | 'reports' | 'settings' | 'waitlist'>('orders')
+  const [tab, setTab] = useState<'orders' | 'batch' | 'reports' | 'settings' | 'waitlist' | 'products'>('orders')
 
   if (status === 'loading') return <div className="max-w-4xl mx-auto px-4 py-20 text-center text-stone-400">Loading…</div>
   if (!session?.user || session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
@@ -20,7 +20,7 @@ export default function AdminPage() {
     <div className="max-w-4xl mx-auto px-4 py-10">
       <h1 className="text-3xl text-brand-900 mb-6">Admin</h1>
       <div className="flex gap-2 mb-8 border-b border-brand-200">
-        {([['orders', 'Order Queue', Users], ['batch', 'Batch Manager', Package], ['reports', 'Reports', BarChart2], ['settings', 'Settings', Settings2], ['waitlist', 'Waitlist', ClipboardList]] as const).map(([key, label, Icon]) => (
+        {([['orders', 'Order Queue', Users], ['batch', 'Batch Manager', Package], ['reports', 'Reports', BarChart2], ['settings', 'Settings', Settings2], ['waitlist', 'Waitlist', ClipboardList], ['products', 'Products', ShoppingBag]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === key ? 'border-brand-700 text-brand-900' : 'border-transparent text-stone-500 hover:text-brand-700'}`}>
             <Icon size={16} />{label}
@@ -32,6 +32,7 @@ export default function AdminPage() {
       {tab === 'reports' && <Reports />}
       {tab === 'settings' && <SiteSettings />}
       {tab === 'waitlist' && <WaitlistManager />}
+      {tab === 'products' && <ProductManager />}
     </div>
   )
 }
@@ -817,6 +818,291 @@ function WaitlistManager() {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function ProductManager() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [addForm, setAddForm] = useState({ name: '', description: '', price: '' })
+  const [saving, setSaving] = useState(false)
+
+  const fetchProducts = useCallback(async () => {
+    const res = await fetch('/api/admin/products')
+    const data = await res.json()
+    setProducts(data.products || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchProducts() }, [fetchProducts])
+
+  const createProduct = async () => {
+    if (!addForm.name) { toast.error('Name required'); return }
+    setSaving(true)
+    const res = await fetch('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: addForm.name, description: addForm.description, price: Math.round(parseFloat(addForm.price || '0') * 100) }),
+    })
+    setSaving(false)
+    if (res.ok) { toast.success('Product created'); setAdding(false); setAddForm({ name: '', description: '', price: '' }); fetchProducts() }
+    else toast.error('Failed to create product')
+  }
+
+  if (loading) return <div className="text-stone-400">Loading…</div>
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button onClick={() => setAdding(!adding)} className="btn-primary flex items-center gap-2">
+          <Plus size={16} /> Add product
+        </button>
+      </div>
+
+      {adding && (
+        <div className="card p-5 border-2 border-brand-300">
+          <h3 className="font-serif text-lg mb-4">New product</h3>
+          <div className="space-y-3 mb-4">
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Name *</label>
+              <input type="text" value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                className="w-full border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Description</label>
+              <textarea value={addForm.description} onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                className="w-full border border-brand-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Base price ($) — leave 0 if variants set price</label>
+              <input type="number" min="0" step="0.01" value={addForm.price} onChange={e => setAddForm(f => ({ ...f, price: e.target.value }))}
+                className="w-full border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={createProduct} disabled={saving} className="btn-primary !py-1.5 !px-4 text-sm">{saving ? 'Saving…' : 'Create'}</button>
+            <button onClick={() => setAdding(false)} className="btn-secondary !py-1.5 !px-4 text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {products.map(p => (
+          <div key={p.id}>
+            <div className={`card p-4 flex items-center gap-4 ${!p.active ? 'opacity-60' : ''}`}>
+              <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-stone-100">
+                {p.image_url
+                  ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-stone-300"><ShoppingBag size={20} /></div>
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{p.name}</p>
+                  {!p.active && <span className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">inactive</span>}
+                </div>
+                <p className="text-xs text-stone-400 truncate">{p.description}</p>
+                <p className="text-xs text-stone-500">
+                  {p.variants?.length > 0
+                    ? p.variants.map((v: any) => `${v.label} $${(v.price / 100).toFixed(2)}`).join(' · ')
+                    : `$${(p.price / 100).toFixed(2)}`
+                  }
+                </p>
+              </div>
+              <button onClick={() => setEditing(editing === p.id ? null : p.id)} className="btn-secondary !py-1.5 !px-3 text-sm flex items-center gap-1">
+                <Pencil size={14} /> Edit
+              </button>
+            </div>
+            {editing === p.id && (
+              <ProductEditor product={p} onDone={() => { setEditing(null); fetchProducts() }} />
+            )}
+          </div>
+        ))}
+        {products.length === 0 && <p className="text-stone-400 text-center py-12">No products.</p>}
+      </div>
+    </div>
+  )
+}
+
+function ProductEditor({ product, onDone }: { product: any; onDone: () => void }) {
+  const [form, setForm] = useState({
+    name: product.name,
+    description: product.description || '',
+    price: (product.price / 100).toFixed(2),
+    active: product.active === 1,
+  })
+  const [variants, setVariants] = useState<any[]>(product.variants || [])
+  const [varForm, setVarForm] = useState({ label: '', price: '' })
+  const [editingVar, setEditingVar] = useState<string | null>(null)
+  const [editVarForm, setEditVarForm] = useState({ label: '', price: '' })
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [imageUrl, setImageUrl] = useState(product.image_url || '')
+  const fileRef = { current: null as HTMLInputElement | null }
+
+  const save = async () => {
+    setSaving(true)
+    const res = await fetch(`/api/admin/products/${product.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, price: Math.round(parseFloat(form.price || '0') * 100) }),
+    })
+    setSaving(false)
+    if (res.ok) { toast.success('Saved'); onDone() }
+    else toast.error('Failed to save')
+  }
+
+  const deactivate = async () => {
+    if (!confirm('Deactivate this product? It will be hidden from the menu.')) return
+    await fetch(`/api/admin/products/${product.id}`, { method: 'DELETE' })
+    toast.success('Product deactivated')
+    onDone()
+  }
+
+  const uploadImage = async (file: File) => {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('image', file)
+    const res = await fetch(`/api/admin/products/${product.id}/image`, { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploading(false)
+    if (res.ok) { setImageUrl(data.image_url); toast.success('Thumbnail updated') }
+    else toast.error(data.error || 'Upload failed')
+  }
+
+  const addVariant = async () => {
+    if (!varForm.label) { toast.error('Label required'); return }
+    const res = await fetch('/api/admin/variants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: product.id, label: varForm.label, price: Math.round(parseFloat(varForm.price || '0') * 100) }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setVariants(v => [...v, { id: data.id, label: varForm.label, price: Math.round(parseFloat(varForm.price || '0') * 100) }])
+      setVarForm({ label: '', price: '' })
+    } else toast.error('Failed to add variant')
+  }
+
+  const saveVariant = async (varId: string) => {
+    await fetch(`/api/admin/variants/${varId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: editVarForm.label, price: Math.round(parseFloat(editVarForm.price || '0') * 100) }),
+    })
+    setVariants(v => v.map(vr => vr.id === varId ? { ...vr, label: editVarForm.label, price: Math.round(parseFloat(editVarForm.price || '0') * 100) } : vr))
+    setEditingVar(null)
+    toast.success('Variant saved')
+  }
+
+  const deleteVariant = async (varId: string) => {
+    if (!confirm('Delete this variant?')) return
+    await fetch(`/api/admin/variants/${varId}`, { method: 'DELETE' })
+    setVariants(v => v.filter(vr => vr.id !== varId))
+    toast.success('Variant removed')
+  }
+
+  return (
+    <div className="border border-brand-200 rounded-lg p-4 mt-1 bg-brand-50 space-y-4">
+      {/* Thumbnail */}
+      <div>
+        <p className="text-xs text-stone-500 mb-2">Thumbnail</p>
+        <div className="flex items-center gap-3">
+          <div className="w-20 h-20 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0">
+            {imageUrl
+              ? <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center text-stone-300"><ShoppingBag size={24} /></div>
+            }
+          </div>
+          <div>
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+              ref={el => { fileRef.current = el }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f) }}
+            />
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1">
+              <Upload size={12} /> {uploading ? 'Uploading…' : 'Upload image'}
+            </button>
+            <p className="text-xs text-stone-400 mt-1">jpg, png, or webp</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Fields */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Name</label>
+          <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            className="w-full border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+        </div>
+        <div>
+          <label className="text-xs text-stone-500 block mb-1">Description</label>
+          <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
+            className="w-full border border-brand-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-stone-500 block mb-1">Base price ($)</label>
+            <input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+              className="w-full border border-brand-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+          </div>
+          <div className="flex items-end pb-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} />
+              Active (visible on menu)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Variants */}
+      <div>
+        <p className="text-xs text-stone-500 mb-2">Variants</p>
+        <div className="space-y-2 mb-3">
+          {variants.map(v => (
+            <div key={v.id} className="flex items-center gap-2 text-sm">
+              {editingVar === v.id ? (
+                <>
+                  <input type="text" value={editVarForm.label} onChange={e => setEditVarForm(f => ({ ...f, label: e.target.value }))}
+                    className="border border-brand-200 rounded px-2 py-1 text-sm flex-1 focus:outline-none" placeholder="Label" />
+                  <input type="number" min="0" step="0.01" value={editVarForm.price} onChange={e => setEditVarForm(f => ({ ...f, price: e.target.value }))}
+                    className="border border-brand-200 rounded px-2 py-1 text-sm w-24 focus:outline-none" placeholder="Price" />
+                  <button onClick={() => saveVariant(v.id)} className="text-xs text-brand-700 font-medium">Save</button>
+                  <button onClick={() => setEditingVar(null)} className="text-xs text-stone-400">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1">{v.label} — ${(v.price / 100).toFixed(2)}</span>
+                  <button onClick={() => { setEditingVar(v.id); setEditVarForm({ label: v.label, price: (v.price / 100).toFixed(2) }) }}
+                    className="text-xs text-stone-400 hover:text-brand-700"><Pencil size={12} /></button>
+                  <button onClick={() => deleteVariant(v.id)} className="text-xs text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input type="text" placeholder="Label (e.g. 4 Pack)" value={varForm.label} onChange={e => setVarForm(f => ({ ...f, label: e.target.value }))}
+            className="border border-brand-200 rounded px-2 py-1 text-sm flex-1 focus:outline-none" />
+          <input type="number" min="0" step="0.01" placeholder="Price" value={varForm.price} onChange={e => setVarForm(f => ({ ...f, price: e.target.value }))}
+            className="border border-brand-200 rounded px-2 py-1 text-sm w-24 focus:outline-none" />
+          <button onClick={addVariant} className="btn-secondary !py-1 !px-3 text-xs">Add</button>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-2 border-t border-brand-100">
+        <button onClick={save} disabled={saving} className="btn-primary !py-1.5 !px-4 text-sm">{saving ? 'Saving…' : 'Save changes'}</button>
+        <button onClick={onDone} className="btn-secondary !py-1.5 !px-4 text-sm">Cancel</button>
+        {product.active === 1 && (
+          <button onClick={deactivate} className="ml-auto text-xs text-red-400 hover:text-red-600 flex items-center gap-1">
+            <Trash2 size={12} /> Deactivate
+          </button>
+        )}
+      </div>
     </div>
   )
 }
